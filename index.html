@@ -4,24 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Criptografar / Descriptografar (Web Crypto API)</title>
-<style>
-  :root{--bg:#f5f7fb;--card:#fff;--accent:#1465b3;--muted:#6b7280}
-  *{box-sizing:border-box;font-family:Inter,system-ui,Arial,sans-serif}
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bg),#eef2f7);padding:24px;color:#0f1724}
-  .container{width:100%;max-width:820px;background:var(--card);border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.08);padding:18px}
-  h1{margin:0 0 8px;font-size:20px}
-  p{margin:0 0 14px;color:var(--muted)}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
-  input, textarea, select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e6e9ee;font-size:14px;background:#fbfdff}
-  textarea{min-height:90px;resize:vertical}
-  .controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-  button{background:var(--accent);color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600}
-  button.ghost{background:transparent;color:var(--accent);border:1px solid #dbeafe}
-  .result{margin-top:14px;padding:12px;background:#f8fafc;border-radius:8px;border:1px dashed #e6eefc;word-break:break-all}
-  .note{font-size:13px;color:#475569;margin-top:10px}
-  @media(max-width:700px){.grid{grid-template-columns:1fr}}
-</style>
+<link rel="stylesheet" href="style.css">
+
 </head>
 <body>
   <div class="container">
@@ -74,18 +58,14 @@
     </div>
 
     <div class="result" id="log">Pronto — insira valores e clique em Criptografar.</div>
-    <div class="note">
-      Nota: este exemplo é para uso pessoal/educacional. Para aplicações reais, gerencie chaves com segurança e prefira operações no servidor.
-    </div>
+    <div class="note">Nota: este exemplo é para uso pessoal/educacional. Para aplicações reais, gerencie chaves com segurança e prefira operações no servidor.</div>
   </div>
 
 <script>
-/* ---------- Helpers (ArrayBuffer <-> Base64 / utils) ---------- */
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
 function bufToBase64(buf){
-  // buf: ArrayBuffer
   const bytes = new Uint8Array(buf);
   let binary = '';
   const chunk = 0x8000;
@@ -114,87 +94,42 @@ function concatArrayBuffers(...buffers){
   return tmp.buffer;
 }
 
-/* ---------- Crypto primitives ---------- */
-
-// Gera chave derivada via PBKDF2 usando passphrase + salt
 async function deriveKey(passphrase, salt, iterations=100000, hash='SHA-256', keyLength=256){
-  const passKey = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(passphrase),
-    {name: 'PBKDF2'},
-    false,
-    ['deriveKey']
-  );
-
-  const derivedKey = await crypto.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt: salt,
-      iterations: iterations,
-      hash: hash
-    },
-    passKey,
-    { name: 'AES-GCM', length: keyLength },
-    false,
-    ['encrypt','decrypt']
-  );
-
+  const passKey = await crypto.subtle.importKey('raw', enc.encode(passphrase), {name: 'PBKDF2'}, false, ['deriveKey']);
+  const derivedKey = await crypto.subtle.deriveKey({name: 'PBKDF2', salt: salt, iterations: iterations, hash: hash}, passKey, { name: 'AES-GCM', length: keyLength }, false, ['encrypt','decrypt']);
   return derivedKey;
 }
 
-// Criptografa texto (UTF-8) retornando Base64 contendo salt||iv||ciphertext
 async function encryptText(plainText, passphrase, iterations=100000){
   if(!plainText) throw new Error('Texto vazio.');
   if(!passphrase) throw new Error('Passphrase vazia.');
-
-  // salt 16 bytes, iv 12 bytes (recomendado para GCM)
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-
   const key = await deriveKey(passphrase, salt.buffer, iterations);
-
-  const cipherBuffer = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv: iv },
-    key,
-    enc.encode(plainText)
-  );
-
-  // Combine salt + iv + ciphertext
+  const cipherBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode(plainText));
   const combined = concatArrayBuffers(salt.buffer, iv.buffer, cipherBuffer);
   return bufToBase64(combined);
 }
 
-// Descriptografa Base64 (salt||iv||cipher) usando passphrase
 async function decryptText(b64combined, passphrase, iterations=100000){
   if(!b64combined) throw new Error('Texto criptografado vazio.');
   if(!passphrase) throw new Error('Passphrase vazia.');
-
   const combinedBuf = base64ToBuf(b64combined);
   const combined = new Uint8Array(combinedBuf);
-
   if (combined.length < 16 + 12 + 1) throw new Error('Formato inválido (tamanho muito pequeno).');
-
   const salt = combined.slice(0,16).buffer;
   const iv = combined.slice(16,28).buffer;
   const cipher = combined.slice(28).buffer;
-
   const key = await deriveKey(passphrase, salt, iterations);
-
   let plainBuffer;
   try{
-    plainBuffer = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: new Uint8Array(iv) },
-      key,
-      cipher
-    );
+    plainBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(iv) }, key, cipher);
   }catch(e){
     throw new Error('Falha na descriptografia. Possível passphrase errada ou dado corrompido.');
   }
-
   return dec.decode(plainBuffer);
 }
 
-/* ---------- UI wiring ---------- */
 const plainEl = document.getElementById('plain');
 const passEl = document.getElementById('pass');
 const iterationsEl = document.getElementById('iterations');
@@ -260,7 +195,6 @@ clearBtn.addEventListener('click', ()=>{
   showLog('Campos limpos.');
 });
 
-// Enter em plain = criptografar
 plainEl.addEventListener('keydown', (ev)=>{
   if(ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); encBtn.click(); }
 });

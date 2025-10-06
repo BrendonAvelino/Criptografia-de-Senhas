@@ -1,0 +1,185 @@
+/* === style.css (versão sem scroll) === */
+:root {
+  --bg: #eef2f7;
+  --card: #ffffff;
+  --accent: #1769aa;
+  --accent-hover: #0f5185;
+  --border: #e3e8ef;
+  --muted: #64748b;
+  --text: #0f172a;
+  --shadow: rgba(15, 23, 42, 0.08);
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: "Inter", "Segoe UI", Roboto, system-ui, sans-serif;
+  transition: all 0.2s ease;
+}
+
+/* Remove completamente o scroll */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--bg), #e9eff5);
+  color: var(--text);
+}
+
+/* Centralização visual */
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==== Container principal ==== */
+.container {
+  width: 100%;
+  max-width: 820px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 28px var(--shadow);
+  padding: 24px 28px 30px;
+  border: 1px solid var(--border);
+  max-height: 92vh; /* mantém dentro da tela sem scroll */
+  overflow-y: auto; /* rola internamente se precisar */
+}
+
+/* ==== Títulos ==== */
+h1 {
+  margin: 0 0 8px;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* ==== Grid layout ==== */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==== Inputs ==== */
+label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+  display: block;
+  margin-bottom: 6px;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #f9fafb;
+  font-size: 15px;
+  color: var(--text);
+}
+
+textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(23, 105, 170, 0.15);
+}
+
+/* ==== Botões ==== */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(23, 105, 170, 0.15);
+}
+
+button:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button.ghost {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+button.ghost:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ==== Log e resultado ==== */
+.result {
+  margin-top: 14px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  color: var(--text);
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.note {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+/* ==== Animação suave ==== */
+.container {
+  animation: fadeIn 0.35s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
